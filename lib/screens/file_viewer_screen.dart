@@ -25,6 +25,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   final DatabaseService _db = DatabaseService();
   final FileService _fileService = FileService();
   late bool _isFavorited;
+  late bool _isStudied;
   bool _showToolbar = true;
   String? _fullPath;
   String? _htmlContent;
@@ -35,6 +36,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   void initState() {
     super.initState();
     _isFavorited = widget.file.isFavorited;
+    _isStudied = widget.file.isStudied;
     _initFile();
     _markAsOpened();
   }
@@ -86,6 +88,16 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       await _db.toggleFavorite(widget.file.id!, newState);
     } catch (e) {
       setState(() => _isFavorited = !newState);
+    }
+  }
+
+  Future<void> _toggleStudied() async {
+    final newState = !_isStudied;
+    setState(() => _isStudied = newState);
+    try {
+      await _db.markAsStudied(widget.file.id!, newState);
+    } catch (e) {
+      setState(() => _isStudied = !newState);
     }
   }
 
@@ -224,6 +236,14 @@ MathJax = {
                 overflow: TextOverflow.ellipsis,
               ),
               actions: [
+                IconButton(
+                  icon: Icon(
+                    _isStudied ? Icons.check_circle : Icons.check_circle_outline,
+                    color: _isStudied ? Colors.green : null,
+                  ),
+                  tooltip: _isStudied ? '取消学完' : '已学完',
+                  onPressed: _toggleStudied,
+                ),
                 IconButton(
                   icon: Icon(
                     _isFavorited ? Icons.star : Icons.star_border,

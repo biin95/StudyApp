@@ -23,8 +23,9 @@ class DatabaseService {
     final path = join(documentsDirectory.path, 'study_app.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -37,6 +38,7 @@ class DatabaseService {
         category TEXT NOT NULL,
         format TEXT NOT NULL,
         is_read INTEGER NOT NULL DEFAULT 0,
+        is_studied INTEGER NOT NULL DEFAULT 0,
         is_favorited INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL,
         last_opened_at INTEGER
@@ -51,6 +53,13 @@ class DatabaseService {
         FOREIGN KEY (file_id) REFERENCES file_records(id) ON DELETE CASCADE
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE file_records ADD COLUMN is_studied INTEGER NOT NULL DEFAULT 0');
+      await db.update('file_records', {'is_read': 0});
+    }
   }
 
   // ========== FileRecord CRUD ==========
@@ -115,6 +124,24 @@ class DatabaseService {
     );
   }
 
+  Future<int> markAsStudied(int fileId, bool studied) async {
+    final db = await database;
+    return await db.update(
+      'file_records',
+      {'is_studied': studied ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [fileId],
+    );
+  }
+
+  Future<int> resetAllReadMarks() async {
+    final db = await database;
+    return await db.update(
+      'file_records',
+      {'is_read': 0},
+    );
+  }
+
   Future<int> deleteFileRecord(int fileId) async {
     final db = await database;
     await db.delete(
@@ -127,6 +154,14 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [fileId],
     );
+  }
+
+  Future<void> deleteFileRecords(List<int> fileIds) async {
+    final db = await database;
+    for (final fileId in fileIds) {
+      await db.delete('recent_records', where: 'file_id = ?', whereArgs: [fileId]);
+      await db.delete('file_records', where: 'id = ?', whereArgs: [fileId]);
+    }
   }
 
   Future<List<FileRecord>> getFavoritedFiles() async {
@@ -185,7 +220,7 @@ class DatabaseService {
     final results = await db.rawQuery('''
       SELECT r.id as recent_id, r.file_id, r.opened_at,
              f.id, f.name, f.path, f.category, f.format, 
-             f.is_read, f.is_favorited, f.created_at, f.last_opened_at
+             f.is_read, f.is_studied, f.is_favorited, f.created_at, f.last_opened_at
       FROM recent_records r
       INNER JOIN file_records f ON r.file_id = f.id
       ORDER BY r.opened_at DESC

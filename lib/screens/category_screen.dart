@@ -26,6 +26,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   List<FileRecord> _files = [];
   bool _loading = true;
   bool _importing = false;
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
 
   @override
   void initState() {
@@ -46,6 +48,86 @@ class _CategoryScreenState extends State<CategoryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('加载失败: $e')),
+        );
+      }
+    }
+  }
+
+  void _enterSelectionMode(int fileId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.clear();
+      _selectedIds.add(fileId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelection(int fileId) {
+    setState(() {
+      if (_selectedIds.contains(fileId)) {
+        _selectedIds.remove(fileId);
+        if (_selectedIds.isEmpty) {
+          _selectionMode = false;
+        }
+      } else {
+        _selectedIds.add(fileId);
+      }
+    });
+  }
+
+  bool get _allSelected => _selectedIds.length == _files.length;
+
+  void _selectAll() {
+    setState(() {
+      if (_allSelected) {
+        _selectedIds.clear();
+        _selectionMode = false;
+      } else {
+        _selectedIds.clear();
+        for (final file in _files) {
+          _selectedIds.add(file.id!);
+        }
+      }
+    });
+  }
+
+  Future<void> _deleteSelectedFiles() async {
+    final count = _selectedIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: Text('确定要删除选中的 $count 个文件吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      for (final fileId in _selectedIds) {
+        final file = _files.firstWhere((f) => f.id == fileId);
+        await _fileService.deletePhysicalFile(file.path);
+        await _db.deleteFileRecord(fileId);
+      }
+      _exitSelectionMode();
+      await _loadFiles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已删除 $count 个文件')),
         );
       }
     }
@@ -81,10 +163,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Future<void> _importFolder() async {
-    // Check permission first
     final hasPermission = await _fileService.requestStoragePermission();
     if (!hasPermission) {
-      // Need to open settings for user to grant permission
       if (!mounted) return;
       final openSettings = await showDialog<bool>(
         context: context,
@@ -106,7 +186,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
       if (openSettings == true) {
         await _fileService.openStorageSettings();
-        // After user comes back from settings, check again
         final granted = await _fileService.isStoragePermissionGranted();
         if (!granted) {
           if (mounted) {
@@ -200,6 +279,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.checklist),
+              title: const Text('批量选择'),
+              onTap: () {
+                Navigator.pop(context);
+                _enterSelectionMode(file.id!);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('删除', style: TextStyle(color: Colors.red)),
               onTap: () {
@@ -250,7 +337,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
         builder: (_) => FileViewerScreen(file: file),
       ),
     );
-    // Refresh list when coming back (read status may have changed)
     _loadFiles();
   }
 
@@ -258,8 +344,31 @@ class _CategoryScreenState extends State<CategoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: _selectionMode
+            ? Text('已选 ${_selectedIds.length} 个')
+            : Text(widget.title),
         elevation: 0,
+        leading: _selectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectionMode,
+              )
+            : null,
+        actions: _selectionMode
+            ? [
+                TextButton(
+                  onPressed: _selectAll,
+                  child: Text(
+                    _allSelected ? '取消全选' : '全选',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: _selectedIds.isNotEmpty ? _deleteSelectedFiles : null,
+                ),
+              ]
+            : null,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -286,12 +395,19 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         final file = _files[index];
                         return FileListItem(
                           file: file,
-                          onTap: () => _openFile(file),
-                          onLongPress: () => _showLongPressMenu(file),
+                          selectionMode: _selectionMode,
+                          selected: _selectedIds.contains(file.id),
+                          onSelectionChanged: (_) => _toggleSelection(file.id!),
+                          onTap: _selectionMode
+                              ? () => _toggleSelection(file.id!)
+                              : () => _openFile(file),
+                          onLongPress: _selectionMode
+                              ? null
+                              : () => _showLongPressMenu(file),
                         );
                       },
                     ),
-      floatingActionButton: _importing
+      floatingActionButton: (_importing || _selectionMode)
           ? null
           : FloatingActionButton(
               onPressed: _showImportOptions,

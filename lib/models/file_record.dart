@@ -5,6 +5,7 @@ class FileRecord {
   final String category; // exam_outline / knowledge / exercise
   final String format; // pdf / html / md
   final bool isRead;
+  final bool isStudied;
   final bool isFavorited;
   final int createdAt;
   final int? lastOpenedAt;
@@ -16,6 +17,7 @@ class FileRecord {
     required this.category,
     required this.format,
     this.isRead = false,
+    this.isStudied = false,
     this.isFavorited = false,
     required this.createdAt,
     this.lastOpenedAt,
@@ -29,6 +31,7 @@ class FileRecord {
       'category': category,
       'format': format,
       'is_read': isRead ? 1 : 0,
+      'is_studied': isStudied ? 1 : 0,
       'is_favorited': isFavorited ? 1 : 0,
       'created_at': createdAt,
       'last_opened_at': lastOpenedAt,
@@ -43,6 +46,7 @@ class FileRecord {
       category: map['category'] as String,
       format: map['format'] as String,
       isRead: (map['is_read'] as int) == 1,
+      isStudied: (map['is_studied'] as int?) == 1,
       isFavorited: (map['is_favorited'] as int) == 1,
       createdAt: map['created_at'] as int,
       lastOpenedAt: map['last_opened_at'] as int?,
@@ -56,6 +60,7 @@ class FileRecord {
     String? category,
     String? format,
     bool? isRead,
+    bool? isStudied,
     bool? isFavorited,
     int? createdAt,
     int? lastOpenedAt,
@@ -67,6 +72,7 @@ class FileRecord {
       category: category ?? this.category,
       format: format ?? this.format,
       isRead: isRead ?? this.isRead,
+      isStudied: isStudied ?? this.isStudied,
       isFavorited: isFavorited ?? this.isFavorited,
       createdAt: createdAt ?? this.createdAt,
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,

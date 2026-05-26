@@ -5,12 +5,18 @@ class FileListItem extends StatelessWidget {
   final FileRecord file;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final bool selectionMode;
+  final bool selected;
+  final ValueChanged<bool?>? onSelectionChanged;
 
   const FileListItem({
     super.key,
     required this.file,
     this.onTap,
     this.onLongPress,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onSelectionChanged,
   });
 
   IconData _getFormatIcon(String format) {
@@ -41,12 +47,21 @@ class FileListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isStudied = file.isStudied;
+    final bool isRead = file.isRead;
+    final Color? nameColor = (isRead || isStudied) ? const Color(0xFF999999) : null;
+
     return ListTile(
-      leading: Icon(
-        _getFormatIcon(file.format),
-        color: _getFormatColor(file.format),
-        size: 32,
-      ),
+      leading: selectionMode
+          ? Checkbox(
+              value: selected,
+              onChanged: onSelectionChanged,
+            )
+          : Icon(
+              _getFormatIcon(file.format),
+              color: _getFormatColor(file.format),
+              size: 32,
+            ),
       title: Row(
         children: [
           Expanded(
@@ -54,16 +69,20 @@ class FileListItem extends StatelessWidget {
               file.name,
               style: TextStyle(
                 fontSize: 16,
-                color: file.isRead ? const Color(0xFF999999) : null,
-                decoration: null,
+                color: nameColor,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (file.isRead)
+          if (isStudied)
             const Padding(
               padding: EdgeInsets.only(left: 8),
-              child: Text('✅', style: TextStyle(fontSize: 16)),
+              child: Icon(Icons.check_circle, color: Colors.green, size: 18),
+            )
+          else if (isRead)
+            const Padding(
+              padding: EdgeInsets.only(left: 8),
+              child: Icon(Icons.visibility, color: Color(0xFF999999), size: 18),
             ),
           if (file.isFavorited)
             const Padding(
