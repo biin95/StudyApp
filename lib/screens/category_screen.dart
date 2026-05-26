@@ -29,6 +29,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
 
+  // 排序状态
+  String _sortBy = 'date'; // 'name' or 'date'
+  bool _sortAscending = false; // false = descending (default: newest first)
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +45,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       final files = await _db.getFileRecordsByCategory(widget.category);
       setState(() {
         _files = files;
+        _sortFiles();
         _loading = false;
       });
     } catch (e) {
@@ -51,6 +56,100 @@ class _CategoryScreenState extends State<CategoryScreen> {
         );
       }
     }
+  }
+
+  /// 对文件列表排序
+  void _sortFiles() {
+    _files.sort((a, b) {
+      int cmp;
+      if (_sortBy == 'name') {
+        cmp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      } else {
+        final aDate = a.lastOpenedAt ?? a.createdAt;
+        final bDate = b.lastOpenedAt ?? b.createdAt;
+        cmp = aDate.compareTo(bDate);
+      }
+      return _sortAscending ? cmp : -cmp;
+    });
+  }
+
+  /// 显示排序选项底部弹窗
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  '排序方式',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              // 按文件名排序
+              RadioListTile<String>(
+                title: const Text('文件名'),
+                value: 'name',
+                groupValue: _sortBy,
+                onChanged: (value) {
+                  setSheetState(() => _sortBy = value!);
+                  setState(() {
+                    _sortBy = value!;
+                    _sortFiles();
+                  });
+                },
+              ),
+              // 按更新时间排序
+              RadioListTile<String>(
+                title: const Text('更新时间'),
+                value: 'date',
+                groupValue: _sortBy,
+                onChanged: (value) {
+                  setSheetState(() => _sortBy = value!);
+                  setState(() {
+                    _sortBy = value!;
+                    _sortFiles();
+                  });
+                },
+              ),
+              const Divider(),
+              // 升序
+              RadioListTile<bool>(
+                title: const Text('正序'),
+                subtitle: Text(_sortBy == 'name' ? 'A → Z' : '旧 → 新'),
+                value: true,
+                groupValue: _sortAscending,
+                onChanged: (value) {
+                  setSheetState(() => _sortAscending = value!);
+                  setState(() {
+                    _sortAscending = value!;
+                    _sortFiles();
+                  });
+                },
+              ),
+              // 降序
+              RadioListTile<bool>(
+                title: const Text('倒序'),
+                subtitle: Text(_sortBy == 'name' ? 'Z → A' : '新 → 旧'),
+                value: false,
+                groupValue: _sortAscending,
+                onChanged: (value) {
+                  setSheetState(() => _sortAscending = value!);
+                  setState(() {
+                    _sortAscending = value!;
+                    _sortFiles();
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _enterSelectionMode(int fileId) {
@@ -368,7 +467,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   onPressed: _selectedIds.isNotEmpty ? _deleteSelectedFiles : null,
                 ),
               ]
-            : null,
+            : [
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  tooltip: '排序',
+                  onPressed: _showSortOptions,
+                ),
+              ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

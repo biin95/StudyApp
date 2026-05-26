@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'category_screen.dart';
+import 'exercise_screen.dart';
 import 'recent_screen.dart';
 import 'favorites_screen.dart';
 import 'bilibili_screen.dart';
@@ -34,18 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
       'category': 'knowledge',
     },
     {
-      'title': '习题',
-      'category': 'exercise_practice',
-      'icon': Icons.edit_note,
+      'title': '练习题',
+      'icon': Icons.fitness_center,
       'color': Color(0xFFFFF3E0),
       'darkColor': Color(0xFF2E2510),
-    },
-    {
-      'title': '真题',
-      'category': 'exercise_real',
-      'icon': Icons.quiz,
-      'color': Color(0xFFFFF8E1),
-      'darkColor': Color(0xFF2E2810),
+      'category': 'exercise',
     },
     {
       'title': 'B站',
@@ -117,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (category) {
       case 'exam_outline':
       case 'knowledge':
-      case 'exercise':
-      case 'exercise_practice':
-      case 'exercise_real':
         screen = CategoryScreen(
           category: category,
           title: entry['title'] as String,
         );
+        break;
+      case 'exercise':
+        screen = const ExerciseScreen();
         break;
       case 'bilibili':
         screen = const BilibiliScreen();
