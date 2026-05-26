@@ -34,11 +34,18 @@ class _HomeScreenState extends State<HomeScreen> {
       'category': 'knowledge',
     },
     {
-      'title': '练习题',
+      'title': '习题',
+      'category': 'exercise_practice',
       'icon': Icons.edit_note,
       'color': Color(0xFFFFF3E0),
       'darkColor': Color(0xFF2E2510),
-      'category': 'exercise',
+    },
+    {
+      'title': '真题',
+      'category': 'exercise_real',
+      'icon': Icons.quiz,
+      'color': Color(0xFFFFF8E1),
+      'darkColor': Color(0xFF2E2810),
     },
     {
       'title': 'B站',
@@ -111,6 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'exam_outline':
       case 'knowledge':
       case 'exercise':
+      case 'exercise_practice':
+      case 'exercise_real':
         screen = CategoryScreen(
           category: category,
           title: entry['title'] as String,

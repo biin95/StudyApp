@@ -23,7 +23,7 @@ class DatabaseService {
     final path = join(documentsDirectory.path, 'study_app.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -59,6 +59,10 @@ class DatabaseService {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE file_records ADD COLUMN is_studied INTEGER NOT NULL DEFAULT 0');
       await db.update('file_records', {'is_read': 0});
+    }
+    if (oldVersion < 3) {
+      // Migrate existing 'exercise' files to 'exercise_practice'
+      await db.update('file_records', {'category': 'exercise_practice'}, where: 'category = ?', whereArgs: ['exercise']);
     }
   }
 

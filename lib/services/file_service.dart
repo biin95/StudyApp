@@ -17,6 +17,8 @@ class FileService {
     'exam_outline': 'exam_outline',
     'knowledge': 'knowledge',
     'exercise': 'exercise',
+    'exercise_practice': 'exercise_practice',
+    'exercise_real': 'exercise_real',
   };
 
   Future<String> getAppDocPath() async {
