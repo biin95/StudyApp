@@ -51,6 +51,19 @@ class FileService {
     return supportedExtensions.contains(ext);
   }
 
+  /// 获取去重后的文件路径（处理同名文件）
+  Future<String> getUniqueFilePath(String targetDir, String fileName) async {
+    String finalPath = p.join(targetDir, fileName);
+    int counter = 1;
+    while (await File(finalPath).exists()) {
+      final nameWithoutExt = p.basenameWithoutExtension(fileName);
+      final ext = p.extension(fileName);
+      finalPath = p.join(targetDir, '${nameWithoutExt}_$counter$ext');
+      counter++;
+    }
+    return finalPath;
+  }
+
   Future<List<FileRecord>> importFiles(String category) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -75,17 +88,7 @@ class FileService {
       if (!isSupportedFile(fileName)) continue;
 
       final sourceFile = File(file.path!);
-      final targetPath = p.join(targetDir.path, fileName);
-
-      // Handle duplicate names
-      String finalPath = targetPath;
-      int counter = 1;
-      while (await File(finalPath).exists()) {
-        final nameWithoutExt = p.basenameWithoutExtension(fileName);
-        final ext = p.extension(fileName);
-        finalPath = p.join(targetDir.path, '${nameWithoutExt}_$counter$ext');
-        counter++;
-      }
+      final finalPath = await getUniqueFilePath(targetDir.path, fileName);
 
       await sourceFile.copy(finalPath);
 
@@ -160,17 +163,7 @@ class FileService {
         final fileName = p.basename(entity.path);
         if (!isSupportedFile(fileName)) continue;
 
-        final targetPath = p.join(targetDir.path, fileName);
-
-        // Handle duplicate names
-        String finalPath = targetPath;
-        int counter = 1;
-        while (await File(finalPath).exists()) {
-          final nameWithoutExt = p.basenameWithoutExtension(fileName);
-          final ext = p.extension(fileName);
-          finalPath = p.join(targetDir.path, '${nameWithoutExt}_$counter$ext');
-          counter++;
-        }
+        final finalPath = await getUniqueFilePath(targetDir.path, fileName);
 
         await entity.copy(finalPath);
 

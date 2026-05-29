@@ -19,12 +19,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   List<FileRecord> _favorites = [];
   bool _loading = true;
 
-  static const Map<String, String> _categoryLabels = {
-    'exam_outline': '考试大纲',
-    'knowledge': '知识点',
-    'exercise': '练习题',
-  };
-
   @override
   void initState() {
     super.initState();

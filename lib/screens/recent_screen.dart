@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/file_record.dart';
 import '../services/database_service.dart';
 import '../services/file_service.dart';
+import '../utils/format_utils.dart';
 import '../widgets/empty_state.dart';
 import 'file_viewer_screen.dart';
 
@@ -55,32 +56,6 @@ class _RecentScreenState extends State<RecentScreen> {
     return '$diff天前';
   }
 
-  IconData _getFormatIcon(String format) {
-    switch (format) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'html':
-        return Icons.html;
-      case 'md':
-        return Icons.code;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  Color _getFormatColor(String format) {
-    switch (format) {
-      case 'pdf':
-        return Colors.red;
-      case 'html':
-        return Colors.orange;
-      case 'md':
-        return Colors.blueGrey;
-      default:
-        return Colors.grey;
-    }
-  }
-
   Future<void> _openFile(Map<String, dynamic> item) async {
     final filePath = item['path'] as String;
     final exists = await _fileService.fileExists(filePath);
@@ -120,6 +95,7 @@ class _RecentScreenState extends State<RecentScreen> {
       category: item['category'] as String,
       format: item['format'] as String,
       isRead: (item['is_read'] as int) == 1,
+      isStudied: (item['is_studied'] as int?) == 1,
       isFavorited: (item['is_favorited'] as int) == 1,
       createdAt: item['created_at'] as int,
       lastOpenedAt: item['last_opened_at'] as int?,
@@ -158,8 +134,8 @@ class _RecentScreenState extends State<RecentScreen> {
 
                     return ListTile(
                       leading: Icon(
-                        _getFormatIcon(item['format'] as String),
-                        color: _getFormatColor(item['format'] as String),
+                        FormatUtils.getIcon(item['format'] as String),
+                        color: FormatUtils.getColor(item['format'] as String),
                         size: 32,
                       ),
                       title: Text(

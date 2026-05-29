@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/file_record.dart';
+import '../utils/format_utils.dart';
 
 class FileListItem extends StatelessWidget {
   final FileRecord file;
@@ -19,32 +20,6 @@ class FileListItem extends StatelessWidget {
     this.onSelectionChanged,
   });
 
-  IconData _getFormatIcon(String format) {
-    switch (format) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'html':
-        return Icons.html;
-      case 'md':
-        return Icons.code;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  Color _getFormatColor(String format) {
-    switch (format) {
-      case 'pdf':
-        return Colors.red;
-      case 'html':
-        return Colors.orange;
-      case 'md':
-        return Colors.blueGrey;
-      default:
-        return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isStudied = file.isStudied;
@@ -58,8 +33,8 @@ class FileListItem extends StatelessWidget {
               onChanged: onSelectionChanged,
             )
           : Icon(
-              _getFormatIcon(file.format),
-              color: _getFormatColor(file.format),
+              FormatUtils.getIcon(file.format),
+              color: FormatUtils.getColor(file.format),
               size: 32,
             ),
       title: Row(

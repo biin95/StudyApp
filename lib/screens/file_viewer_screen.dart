@@ -31,6 +31,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   String? _htmlContent;
   String? _mdContent;
   bool _loading = true;
+  WebViewController? _webViewController;
 
   @override
   void initState() {
@@ -149,8 +150,10 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   Widget _buildHtmlViewer() {
     if (_htmlContent == null) return const Center(child: Text('\u6587\u4ef6\u5185\u5bb9\u4e3a\u7a7a'));
 
-    // Inject MathJax config and script into the HTML head
-    const mathjaxConfig = r"""
+    // \u53ea\u5728\u7b2c\u4e00\u6b21\u6216\u5185\u5bb9\u53d8\u5316\u65f6\u521b\u5efa\u63a7\u5236\u5668
+    if (_webViewController == null) {
+      // Inject MathJax config and script into the HTML head
+      const mathjaxConfig = r"""
 <script>
 MathJax = {
   tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
@@ -160,32 +163,35 @@ MathJax = {
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.min.js"></script>
 """;
 
-    String html = _htmlContent!;
-    // Inject MathJax before </head> if it exists, otherwise before </body> or at start
-    if (html.contains('</head>')) {
-      html = html.replaceFirst('</head>', '$mathjaxConfig</head>');
-    } else if (html.contains('</body>')) {
-      html = html.replaceFirst('</body>', '$mathjaxConfig</body>');
-    } else {
-      html = '$mathjaxConfig$html';
+      String html = _htmlContent!;
+      // Inject MathJax before </head> if it exists, otherwise before </body> or at start
+      if (html.contains('</head>')) {
+        html = html.replaceFirst('</head>', '$mathjaxConfig</head>');
+      } else if (html.contains('</body>')) {
+        html = html.replaceFirst('</body>', '$mathjaxConfig</body>');
+      } else {
+        html = '$mathjaxConfig$html';
+      }
+
+      final controller = WebViewController();
+      controller
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(NavigationDelegate(
+          onPageFinished: (_) {
+            // Trigger MathJax rendering after page loads
+            controller.runJavaScript('MathJax.typeset && MathJax.typeset();');
+          },
+        ))
+        ..loadRequest(Uri.dataFromString(
+          html,
+          mimeType: 'text/html',
+          encoding: Encoding.getByName('utf-8'),
+        ));
+
+      _webViewController = controller;
     }
 
-    final controller = WebViewController();
-    controller
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (_) {
-          // Trigger MathJax rendering after page loads
-          controller.runJavaScript('MathJax.typeset && MathJax.typeset();');
-        },
-      ))
-      ..loadRequest(Uri.dataFromString(
-        html,
-        mimeType: 'text/html',
-        encoding: Encoding.getByName('utf-8'),
-      ));
-
-    return WebViewWidget(controller: controller);
+    return WebViewWidget(controller: _webViewController!);
   }
 
   Widget _buildMarkdownViewer() {

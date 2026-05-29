@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/file_record.dart';
 import '../services/database_service.dart';
 import '../services/file_service.dart';
@@ -36,7 +37,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFiles();
+    _loadSortPrefs().then((_) => _loadFiles());
   }
 
   Future<void> _loadFiles() async {
@@ -56,6 +57,20 @@ class _CategoryScreenState extends State<CategoryScreen> {
         );
       }
     }
+  }
+
+  Future<void> _loadSortPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sortBy = prefs.getString('sort_by_${widget.category}') ?? 'date';
+      _sortAscending = prefs.getBool('sort_ascending_${widget.category}') ?? false;
+    });
+  }
+
+  Future<void> _saveSortPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('sort_by_${widget.category}', _sortBy);
+    await prefs.setBool('sort_ascending_${widget.category}', _sortAscending);
   }
 
   /// 对文件列表排序
@@ -100,6 +115,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     _sortBy = value!;
                     _sortFiles();
                   });
+                  _saveSortPrefs();
                 },
               ),
               // 按更新时间排序
@@ -113,6 +129,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     _sortBy = value!;
                     _sortFiles();
                   });
+                  _saveSortPrefs();
                 },
               ),
               const Divider(),
@@ -128,6 +145,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     _sortAscending = value!;
                     _sortFiles();
                   });
+                  _saveSortPrefs();
                 },
               ),
               // 降序
@@ -142,6 +160,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     _sortAscending = value!;
                     _sortFiles();
                   });
+                  _saveSortPrefs();
                 },
               ),
               const SizedBox(height: 16),
